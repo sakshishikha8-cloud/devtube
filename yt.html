@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevTube | Coder's Hub</title>
+    <link rel="stylesheet" href="yt.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <i class="fa-solid fa-bars menu-icon" id="menu-btn"></i>
+            <div class="logo" id="logo-btn"><i class="fa-solid fa-code"></i> DevTube</div>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search DSA, React, Python...">
+            <button id="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
+        <div class="nav-icons">
+            <i class="fa-solid fa-moon icon-hide" id="theme-toggle-btn" title="Toggle Theme"></i>
+            <i class="fa-solid fa-link icon-hide" id="custom-url-btn" title="Distraction-Free Player"></i>
+            <button id="nav-signin-btn" class="sign-in-btn"><i class="fa-regular fa-circle-user"></i> Sign In</button>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="nav-link active" id="nav-home"><i class="fa-solid fa-house"></i> Home</div>
+            <div class="nav-link" id="nav-dashboard"><i class="fa-solid fa-chart-pie"></i> My Dashboard</div>
+            <div class="nav-link" id="nav-saved"><i class="fa-solid fa-bookmark"></i> Watch Later</div>
+            <div class="nav-link" id="nav-quizzes"><i class="fa-solid fa-gamepad"></i> Topic Quizzes</div>
+            <div class="nav-link" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> Leaderboard</div>
+            <hr>
+            <div class="streak-container">
+                <h3>Daily Coding Streak</h3>
+                <div class="streak-display">
+                    <i class="fa-solid fa-fire streak-icon" id="fire-icon"></i>
+                    <span id="streak-count">0</span> Days
+                </div>
+                <p id="streak-msg" class="streak-msg">Watch a lecture today to increase your streak! 📚</p>
+            </div>
+        </aside>
+
+        <main class="content" id="main-content">
+            <div id="browse-view">
+                <div class="categories" id="categories"></div>
+                <div class="video-grid" id="video-grid"></div>
+            </div>
+
+            <div id="dashboard-view" style="display: none;">
+                <h2 style="margin-bottom: 20px;"><i class="fa-solid fa-chart-line"></i> Learning Analytics</h2>
+                <div class="dashboard-grid">
+                    <div class="dash-card">
+                        <h3>Total XP Earned</h3>
+                        <p class="dash-stat" id="dash-xp">0</p>
+                    </div>
+                    <div class="dash-card">
+                        <h3>Lectures Watched</h3>
+                        <p class="dash-stat" id="dash-watched">0</p>
+                    </div>
+                </div>
+                <div class="chart-container" style="width: 100%; max-width: 400px; margin: 30px auto; background: var(--quiz-box-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--glass-border);">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="ai-chatbot-container" id="ai-chatbot">
+        <div class="ai-header">
+            <div class="ai-title"><i class="fa-solid fa-robot"></i> DevBot AI</div>
+            <i class="fa-solid fa-chevron-down minimize-ai" id="minimize-ai"></i>
+        </div>
+        <div class="ai-messages" id="ai-messages"><div class="msg ai-msg">Hi! Need video recommendations or help with a concept?</div></div>
+        <div class="ai-input-area">
+            <input type="text" id="ai-input" placeholder="Ask DevBot...">
+            <button id="ai-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <button class="ai-fab" id="ai-fab"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+
+    <div id="overlay" class="overlay"></div>
+    
+    <div id="login-modal" class="modal">
+        <div class="modal-header"><h2>Sign In</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-body">
+            <input type="text" id="login-user" placeholder="Username" class="modal-input">
+            <button id="submit-login" class="primary-btn">Sign In</button>
+        </div>
+    </div>
+
+    <div id="url-modal" class="modal">
+        <div class="modal-header"><h2>Distraction-Free Player</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-body">
+            <input type="text" id="custom-yt-url" placeholder="https://www.youtube.com/watch?v=..." class="modal-input">
+            <button id="play-custom-btn" class="primary-btn"><i class="fa-solid fa-play"></i> Play Video</button>
+        </div>
+    </div>
+
+    <div id="video-modal" class="modal video-modal split-modal">
+        <div class="modal-header"><h2 id="modal-video-title">Title</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="split-layout">
+            <div class="video-side">
+                <div class="video-container">
+                    <iframe id="youtube-player" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                </div>
+                <div class="video-actions" style="margin-top: 10px;">
+                    <button id="save-video-btn" class="action-btn"><i class="fa-solid fa-bookmark"></i> <span id="save-btn-text">Watch Later</span></button>
+                </div>
+            </div>
+            <div class="code-side">
+                <h3><i class="fa-solid fa-terminal"></i> Code Workspace</h3>
+                <textarea id="code-editor" placeholder="# Write your Python or Java notes here...&#10;&#10;def my_function():&#10;    print('Learning is awesome')"></textarea>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">* Autosaves to your browser</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="quiz-modal" class="modal">
+        <div class="modal-header"><h2>Topic Quizzes</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-body" id="quiz-topics-container"></div>
+    </div>
+
+    <div id="active-quiz-modal" class="modal">
+        <div class="modal-header"><h2 id="quiz-title">Quiz</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-body" id="quiz-questions-container"></div>
+        <button id="submit-quiz-btn" class="primary-btn" style="margin-top:15px;">Submit Answers</button>
+    </div>
+
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-header"><h2>Global Leaderboard</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-body">
+            <table class="leaderboard-table">
+                <thead><tr><th>Rank</th><th>Coder</th><th>Score</th></tr></thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="yt.js"></script>
+</body>
+</html>
