@@ -34,6 +34,7 @@
             <div class="nav-link" id="nav-saved"><i class="fa-solid fa-bookmark"></i> Watch Later</div>
             <div class="nav-link" id="nav-quizzes"><i class="fa-solid fa-gamepad"></i> Topic Quizzes</div>
             <div class="nav-link" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> Leaderboard</div>
+            <div class="nav-link" id="nav-roadmap"><i class="fa-solid fa-map"></i> AI Roadmaps</div>
             <hr>
             <div class="streak-container">
                 <h3>Daily Coding Streak</h3>
@@ -63,6 +64,15 @@
                         <p class="dash-stat" id="dash-watched">0</p>
                     </div>
                 </div>
+
+                <!-- ML RECOMMENDATIONS SECTION -->
+                <div class="dash-card" style="margin-top: 20px;">
+                    <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Recommended For You (ML Model)</h3>
+                    <div id="ml-recommendations-list" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <p style="color: var(--text-secondary);">Loading personalized recommendations...</p>
+                    </div>
+                </div>
+
                 <div class="chart-container" style="width: 100%; max-width: 400px; margin: 30px auto; background: var(--quiz-box-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--glass-border);">
                     <canvas id="progressChart"></canvas>
                 </div>
@@ -70,12 +80,15 @@
         </main>
     </div>
 
+    <!-- DevBot AI Chatbot Window -->
     <div class="ai-chatbot-container" id="ai-chatbot">
         <div class="ai-header">
             <div class="ai-title"><i class="fa-solid fa-robot"></i> DevBot AI</div>
             <i class="fa-solid fa-chevron-down minimize-ai" id="minimize-ai"></i>
         </div>
-        <div class="ai-messages" id="ai-messages"><div class="msg ai-msg">Hi! Need video recommendations or help with a concept?</div></div>
+        <div class="ai-messages" id="ai-messages">
+            <div class="msg ai-msg">Hi! Need video recommendations or help with a concept?</div>
+        </div>
         <div class="ai-input-area">
             <input type="text" id="ai-input" placeholder="Ask DevBot...">
             <button id="ai-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
@@ -85,11 +98,21 @@
 
     <div id="overlay" class="overlay"></div>
     
+    <!-- DATABASE AUTHENTICATION MODAL -->
     <div id="login-modal" class="modal">
-        <div class="modal-header"><h2>Sign In</h2><i class="fa-solid fa-xmark close-modal"></i></div>
+        <div class="modal-header">
+            <h2 id="modal-title">Sign In to DevTube</h2>
+            <i class="fa-solid fa-xmark close-modal"></i>
+        </div>
         <div class="modal-body">
-            <input type="text" id="login-user" placeholder="Username" class="modal-input">
-            <button id="submit-login" class="primary-btn">Sign In</button>
+            <form id="auth-form">
+                <input type="email" id="auth-email" placeholder="Email address" class="modal-input" required style="margin-bottom: 10px;">
+                <input type="password" id="auth-password" placeholder="Password (min 6 characters)" class="modal-input" required style="margin-bottom: 15px;">
+                <button type="submit" id="auth-submit-btn" class="primary-btn" style="width: 100%;">Sign In</button>
+            </form>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" id="toggle-auth-mode" style="color: var(--accent-color); font-size: 0.9rem; text-decoration: none;">Don't have an account? <b>Sign Up</b></a>
+            </div>
         </div>
     </div>
 
@@ -106,7 +129,7 @@
         <div class="split-layout">
             <div class="video-side">
                 <div class="video-container">
-                    <iframe id="youtube-player" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    <iframe id="youtube-player" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
                 <div class="video-actions" style="margin-top: 10px;">
                     <button id="save-video-btn" class="action-btn"><i class="fa-solid fa-bookmark"></i> <span id="save-btn-text">Watch Later</span></button>
@@ -140,6 +163,25 @@
             </table>
         </div>
     </div>
+<div id="roadmap-modal" class="modal" style="width: 600px; max-width: 95%; padding: 25px;">
+    <div class="modal-header" style="margin-bottom: 15px;">
+        <h2><i class="fa-solid fa-map"></i> AI Career Roadmap Generator</h2>
+        <i class="fa-solid fa-xmark close-modal" style="cursor: pointer;"></i>
+    </div>
+    <div class="modal-body" style="width: 100%;">
+        <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.95rem;">What do you want to become or learn?</p>
+        
+        <!-- Stacked layout for a guaranteed wide input and full-width button -->
+        <div style="display: flex; flex-direction: column; width: 100%; gap: 12px; margin-bottom: 20px;">
+            <input type="text" id="roadmap-input" placeholder="e.g., Data Scientist, Full Stack Developer..." style="width: 100% !important; padding: 14px 16px; font-size: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid #3b82f6; border-radius: 8px; color: #fff; outline: none; box-sizing: border-box;">
+            <button id="generate-roadmap-btn" class="primary-btn" style="width: 100% !important; padding: 14px 0; font-size: 1rem; border-radius: 8px; cursor: pointer; text-align: center;">Generate Roadmap</button>
+        </div>
+
+        <div id="roadmap-result-container" style="max-height: 380px; overflow-y: auto; padding-right: 5px;">
+            <p style="text-align: center; color: var(--text-secondary); padding: 20px;">Your custom step-by-step roadmap will appear here...</p>
+        </div>
+    </div>
+</div>
 
     <div id="toast-container" class="toast-container"></div>
     <script src="index.js"></script>

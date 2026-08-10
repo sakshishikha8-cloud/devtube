@@ -1,0 +1,4 @@
+PORT=5000
+SUPABASE_URL=https://tqzcvhfvyvukgsqlxqir.supabase.co
+SUPABASE_KEY=sb_publishable_eyS9zSrHi6HZIF-5_f75Kg_OeTljNYR
+GEMINI_API_KEY=AIzaSyAVSss84nZm6kMBQsgazC0qFMPdC9hhF5Y

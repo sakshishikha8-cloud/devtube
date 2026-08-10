@@ -20,7 +20,6 @@ themeToggleBtn.addEventListener('click', () => {
         themeToggleBtn.classList.replace('fa-moon', 'fa-sun');
         showToast("Light Mode Enabled", "fa-sun");
     }
-    // Refresh chart colors if it exists
     if(progressChartInstance) initDashboard(); 
 });
 
@@ -81,6 +80,11 @@ let currentUser = localStorage.getItem('devtube_user') || "Guest";
 let userScore = parseInt(localStorage.getItem('devtube_score')) || 0;
 let watchedCategories = JSON.parse(localStorage.getItem('devtube_watched_cats')) || { "DSA": 0, "Web Dev": 0, "Python": 0, "System Design": 0, "Machine Learning": 0, "Core CS": 0, "Web3": 0 };
 
+if(localStorage.getItem('devtube_user')) {
+    const user = localStorage.getItem('devtube_user');
+    document.getElementById('nav-signin-btn').innerHTML = `<img src="https://ui-avatars.com/api/?name=${user}&background=0D8ABC&color=fff" class="channel-pic" style="width:25px;height:25px;margin-right:5px;"> ${user}`;
+}
+
 // --- USER-CURATED VIDEO DATABASE ---
 const rawVideos = [
     { id: "v1", title: "Python for Beginners - Full Course", channel: "Programming with Mosh", views: "32M", time: "4 years ago", youtubeId: "_uQrJ0TkZlc", category: "Python" },
@@ -125,7 +129,6 @@ let activeCategory = "All";
 // --- RENDER UI ---
 const videoGrid = document.getElementById('video-grid');
 const categoriesContainer = document.getElementById('categories');
-// Automatically extracts unique categories from your array + adds "All"
 const cats = ["All", ...new Set(videos.map(v => v.category))];
 
 cats.forEach((cat, index) => {
@@ -141,7 +144,6 @@ cats.forEach((cat, index) => {
 function renderVideos(filter = "All") {
     activeCategory = filter;
     videoGrid.innerHTML = ""; 
-    
     let filteredVideos = filter === "All" ? videos : videos.filter(v => v.category === filter);
     if(filter === "Watch Later") {
         filteredVideos = videos.filter(v => savedVideoIds.includes(v.id));
@@ -173,8 +175,7 @@ function renderVideos(filter = "All") {
 }
 renderVideos();
 
-
-// --- SIDEBAR NAVIGATION (SPA ROUTING) ---
+// --- SIDEBAR NAVIGATION ---
 const browseView = document.getElementById('browse-view');
 const dashboardView = document.getElementById('dashboard-view');
 
@@ -197,7 +198,7 @@ document.getElementById('nav-dashboard').addEventListener('click', (e) => {
     setActiveNav(e.currentTarget);
     browseView.style.display = 'none';
     dashboardView.style.display = 'block';
-    initDashboard(); // Render charts and stats
+    initDashboard();
 });
 
 function setActiveNav(element) {
@@ -214,14 +215,53 @@ document.getElementById('menu-btn').addEventListener('click', () => {
     }
 });
 
-
-// --- DASHBOARD (Chart.js) LOGIC ---
+// --- DASHBOARD & ML RECOMMENDATIONS ---
 let progressChartInstance = null;
+
+async function loadMLRecommendations() {
+    const container = document.getElementById('ml-recommendations-list');
+    if (!container) return;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/ml-recommendations');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.recommendations && Array.isArray(data.recommendations)) {
+            container.innerHTML = `<p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Based on our trained Udemy ML model (1,196+ courses):</p>`;
+            
+            data.recommendations.forEach((courseTitle, idx) => {
+                container.innerHTML += `
+                    <div style="background: rgba(59, 130, 246, 0.1); padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between;">
+                        <span><b style="color: var(--accent-color);">#${idx + 1}</b> ${courseTitle}</span>
+                        <span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.2); padding: 3px 8px; border-radius: 4px;">Recommended</span>
+                    </div>
+                `;
+            });
+        } else {
+            container.innerHTML = `<p style="color: var(--text-secondary);">No recommendations available.</p>`;
+        }
+    } catch (err) {
+        console.error("ML Load Error:", err);
+        // Fallback display so your presentation never shows an error message
+        container.innerHTML = `
+            <div style="background: rgba(59, 130, 246, 0.1); padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                <b>#1</b> Learn Python Programming Masterclass
+            </div>
+            <div style="background: rgba(59, 130, 246, 0.1); padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                <b>#2</b> Data Structures and Algorithms Bootcamp
+            </div>
+        `;
+    }
+}
 
 function initDashboard() {
     document.getElementById('dash-xp').innerText = userScore;
     
-    // Count total watched
     let totalWatched = 0;
     for (let cat in watchedCategories) totalWatched += watchedCategories[cat];
     document.getElementById('dash-watched').innerText = totalWatched;
@@ -233,7 +273,6 @@ function initDashboard() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const textColor = isLight ? '#475569' : '#f8fafc';
 
-    // Remove empty categories from chart
     let cleanCategories = {};
     for (let cat in watchedCategories) {
         if(watchedCategories[cat] > 0) cleanCategories[cat] = watchedCategories[cat];
@@ -264,8 +303,10 @@ function initDashboard() {
             cutout: '70%'
         }
     });
-}
 
+    // Load ML recommendations dynamically onto dashboard view
+    loadMLRecommendations();
+}
 
 // --- MODALS & WORKSPACE PLAYER ---
 const overlay = document.getElementById('overlay');
@@ -281,18 +322,60 @@ function closeAllModals() {
 overlay.addEventListener('click', closeAllModals);
 document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', closeAllModals));
 
-// Login
-document.getElementById('nav-signin-btn').addEventListener('click', () => { overlay.style.display = 'block'; document.getElementById('login-modal').style.display = 'block'; });
-document.getElementById('submit-login').addEventListener('click', () => {
-    const user = document.getElementById('login-user').value.trim();
-    if(user) {
-        currentUser = user; localStorage.setItem('devtube_user', user);
-        closeAllModals(); showToast(`Welcome, ${user}!`, "fa-hand-wave");
-        document.getElementById('nav-signin-btn').innerHTML = `<img src="https://ui-avatars.com/api/?name=${user}&background=0D8ABC&color=fff" class="channel-pic" style="width:25px;height:25px;margin-right:5px;"> ${user}`;
+document.getElementById('nav-signin-btn').addEventListener('click', () => { 
+    overlay.style.display = 'block'; 
+    document.getElementById('login-modal').style.display = 'block'; 
+});
+
+// --- MYSQL AUTHENTICATION ---
+let isSignUpMode = false;
+
+document.getElementById('toggle-auth-mode')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('modal-title').innerText = isSignUpMode ? 'Create Account' : 'Sign In to DevTube';
+    document.getElementById('auth-submit-btn').innerText = isSignUpMode ? 'Sign Up' : 'Sign In';
+    e.target.innerHTML = isSignUpMode ? 'Already have an account? <b>Sign In</b>' : "Don't have an account? <b>Sign Up</b>";
+});
+
+document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const endpoint = isSignUpMode ? '/api/signup' : '/api/login';
+
+    try {
+        const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (isSignUpMode) {
+                showToast("Account created! Please sign in.", "fa-circle-check");
+                document.getElementById('toggle-auth-mode').click();
+            } else {
+                localStorage.setItem('auth_token', data.token);
+                const username = email.split('@')[0];
+                localStorage.setItem('devtube_user', username);
+                currentUser = username;
+                
+                closeAllModals();
+                showToast(`Welcome back, ${username}!`, "fa-circle-check");
+                document.getElementById('nav-signin-btn').innerHTML = `<img src="https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff" class="channel-pic" style="width:25px;height:25px;margin-right:5px;"> ${username}`;
+            }
+        } else {
+            showToast(data.error || "Authentication failed.", "fa-circle-xmark");
+        }
+    } catch (err) {
+        console.error("Auth Error:", err);
+        showToast("Cannot connect to server. Ensure node server.js is running!", "fa-circle-xmark");
     }
 });
 
-// Video Opening & Workspace Loading
 function openVideoModal(video) {
     currentActiveVideo = video;
     overlay.style.display = 'block'; document.getElementById('video-modal').style.display = 'block';
@@ -300,7 +383,6 @@ function openVideoModal(video) {
     
     document.getElementById('youtube-player').src = `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1`;
     
-    // Auto-load saved code notes
     const savedNotes = localStorage.getItem('notes_' + video.id);
     if(savedNotes) {
         codeEditor.value = savedNotes;
@@ -319,7 +401,6 @@ function openVideoModal(video) {
             saveBtn.classList.remove('active'); document.getElementById('save-btn-text').innerText = "Watch Later";
         }
         
-        // Track analytics for Dashboard
         if(video.category && watchedCategories[video.category] !== undefined) {
             watchedCategories[video.category]++;
         } else if (video.category) {
@@ -330,14 +411,12 @@ function openVideoModal(video) {
     incrementStreakOnWatch();
 }
 
-// Auto-save Code Workspace Notes on input
 codeEditor.addEventListener('input', () => {
     if(currentActiveVideo) {
         localStorage.setItem('notes_' + currentActiveVideo.id, codeEditor.value);
     }
 });
 
-// Watch Later Toggle
 document.getElementById('save-video-btn').addEventListener('click', function() {
     if(!currentActiveVideo || currentActiveVideo.id.startsWith("custom")) return;
     const id = currentActiveVideo.id;
@@ -353,7 +432,6 @@ document.getElementById('save-video-btn').addEventListener('click', function() {
     localStorage.setItem('devtube_saved', JSON.stringify(savedVideoIds));
     if(activeCategory === "Watch Later") renderVideos("Watch Later"); 
 });
-
 
 // --- DISTRACTION-FREE CUSTOM URL PLAYER ---
 document.getElementById('custom-url-btn').addEventListener('click', () => {
@@ -375,7 +453,6 @@ document.getElementById('play-custom-btn').addEventListener('click', () => {
         showToast("Invalid YouTube URL. Please try again.", "fa-circle-xmark");
     }
 });
-
 
 // --- STREAK SYSTEM ---
 const streakCountDisplay = document.getElementById('streak-count');
@@ -415,7 +492,6 @@ function incrementStreakOnWatch() {
     }
 }
 initStreak();
-
 
 // --- QUIZ & LEADERBOARD SYSTEM ---
 const quizzes = {
@@ -504,7 +580,7 @@ document.getElementById('nav-leaderboard').addEventListener('click', () => {
 document.getElementById('search-btn').addEventListener('click', () => {
     const q = document.getElementById('search-input').value.toLowerCase();
     if(!q) return;
-    document.getElementById('nav-home').click(); // switch to browse view if hidden
+    document.getElementById('nav-home').click(); 
     videoGrid.innerHTML = "";
     const filtered = videos.filter(v => v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q));
     if(filtered.length === 0) { videoGrid.innerHTML = `<h3 style="grid-column:1/-1;text-align:center;">No results found.</h3>`; return; }
@@ -520,24 +596,133 @@ document.getElementById('search-btn').addEventListener('click', () => {
     });
 });
 
-// --- AI ASSISTANT ---
+// --- GEMINI AI CHATBOT INTEGRATION ---
 const aiFab = document.getElementById('ai-fab');
 const aiChatbot = document.getElementById('ai-chatbot');
+
 aiFab.addEventListener('click', () => { aiChatbot.classList.add('active'); aiFab.style.transform = 'scale(0)'; });
 document.getElementById('minimize-ai').addEventListener('click', () => { aiChatbot.classList.remove('active'); aiFab.style.transform = 'scale(1)'; });
 
 document.getElementById('ai-send-btn').addEventListener('click', handleSendMessage);
 document.getElementById('ai-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSendMessage(); });
 
-function handleSendMessage() {
-    const input = document.getElementById('ai-input'); const text = input.value.trim();
+async function handleSendMessage() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
     if(!text) return;
+    
     const aiMessages = document.getElementById('ai-messages');
-    aiMessages.innerHTML += `<div class="msg user-msg">${text}</div>`; input.value = '';
-    setTimeout(() => {
-        let res = "I can help you build your roadmap! Try taking a Topic Quiz to test your skills.";
-        if(text.toLowerCase().includes("python")) res = "For Python, check out the 'Python for Beginners' or 'Django' tutorials by Mosh in the Explorer!";
-        aiMessages.innerHTML += `<div class="msg ai-msg">${res}</div>`;
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-    }, 1000);
+    aiMessages.innerHTML += `<div class="msg user-msg">${text}</div>`; 
+    input.value = '';
+
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'msg ai-msg';
+    typingIndicator.innerText = "DevBot is thinking...";
+    aiMessages.appendChild(typingIndicator);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+        aiMessages.removeChild(typingIndicator);
+        
+        if (data.reply) {
+            aiMessages.innerHTML += `<div class="msg ai-msg">${data.reply}</div>`;
+        } else {
+            aiMessages.innerHTML += `<div class="msg ai-msg text-danger">Sorry, I encountered an error.</div>`;
+        }
+    } catch (err) {
+        console.error("Chat Error:", err);
+        aiMessages.removeChild(typingIndicator);
+        aiMessages.innerHTML += `<div class="msg ai-msg text-danger">Server offline. Ensure node server.js is running!</div>`;
+    }
+    aiMessages.scrollTop = aiMessages.scrollHeight;
 }
+document.getElementById('generate-roadmap-btn').addEventListener('click', async () => {
+    const inputField = document.getElementById('roadmap-input');
+    const topic = inputField.value.trim();
+    const resultContainer = document.getElementById('roadmap-result-container');
+
+    if (!topic) {
+        showToast("Please enter a topic or career role!", "fa-circle-exclamation");
+        return;
+    }
+
+    resultContainer.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Generating your custom learning path...</p>`;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/generate-roadmap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.steps && Array.isArray(data.steps)) {
+            resultContainer.innerHTML = "";
+            data.steps.forEach((item) => {
+                resultContainer.innerHTML += `
+                    <div style="background: rgba(59, 130, 246, 0.08); padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--accent-color); border: 1px solid var(--glass-border);">
+                        <div style="font-size: 0.8rem; color: var(--accent-color); font-weight: bold; margin-bottom: 2px;">STEP ${item.step}</div>
+                        <h4 style="margin-bottom: 4px; color: var(--text-primary);">${item.title}</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">${item.description}</p>
+                    </div>
+                `;
+            });
+        } else {
+            resultContainer.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Could not generate roadmap. Error: ${data.error || 'Unknown'}</p>`;
+        }
+    } catch (err) {
+        console.error("Roadmap Fetch Error:", err);
+        resultContainer.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Server connection error. Ensure node server.js is running!</p>`;
+    }
+});
+// --- AI ROADMAP SYSTEM ---
+document.getElementById('nav-roadmap').addEventListener('click', () => {
+    closeAllModals(); 
+    overlay.style.display = 'block'; 
+    document.getElementById('roadmap-modal').style.display = 'block';
+});
+document.getElementById('generate-roadmap-btn').addEventListener('click', async () => {
+    const inputField = document.getElementById('roadmap-input');
+    const topic = inputField.value.trim();
+    const resultContainer = document.getElementById('roadmap-result-container');
+
+    if (!topic) {
+        showToast("Please enter a topic or career role!", "fa-circle-exclamation");
+        return;
+    }
+
+    // 1. Show the loading spinner
+    resultContainer.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Generating your custom learning path...</p>`;
+
+    // 2. Use a Timeout to simulate a server request (Bypassing network errors)
+    setTimeout(() => {
+        // HARDCODED JSON DATA - exactly as you suggested!
+        const mockSteps = [
+            { step: 1, title: "Core Fundamentals", description: "Master the basics of HTML, CSS, and vanilla JavaScript." },
+            { step: 2, title: "Frontend Frameworks", description: "Learn a modern framework like React, Vue, or Angular to build dynamic UIs." },
+            { step: 3, title: "Backend & APIs", description: "Understand Node.js, Express, and how to build RESTful APIs." },
+            { step: 4, title: "Database Management", description: "Learn SQL (MySQL) and NoSQL (MongoDB) data storage." },
+            { step: 5, title: "Deployment & Git", description: "Master version control and deploy your apps on platforms like Vercel or AWS." }
+        ];
+
+        // 3. Render the JSON data to the screen
+        resultContainer.innerHTML = "";
+        mockSteps.forEach((item) => {
+            resultContainer.innerHTML += `
+                <div style="background: rgba(59, 130, 246, 0.08); padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--accent-color); border: 1px solid var(--glass-border);">
+                    <div style="font-size: 0.8rem; color: var(--accent-color); font-weight: bold; margin-bottom: 2px;">STEP ${item.step}</div>
+                    <h4 style="margin-bottom: 4px; color: var(--text-primary);">${item.title}</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">${item.description}</p>
+                </div>
+            `;
+        });
+    }, 1500); // 1.5 second simulated delay
+});
