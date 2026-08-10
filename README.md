@@ -31,3 +31,8 @@ Because this project leverages vanilla web technologies, there are no complex bu
 1. Clone the repository:
    ```bash
   https://github.com/sakshishikha8-cloud/devtube.git
+<img width="1917" height="907" alt="image" src="https://github.com/user-attachments/assets/b07e2e54-c068-438c-9f97-5679d9257930" />
+<img width="1917" height="920" alt="image" src="https://github.com/user-attachments/assets/5499d304-8cc4-478e-8308-7bd5f45998b3" />
+<img width="1883" height="955" alt="image" src="https://github.com/user-attachments/assets/4cd7d115-fe99-4f5b-8b4a-2387dafdb777" />
+
+
