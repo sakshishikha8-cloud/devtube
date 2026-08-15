@@ -238,9 +238,9 @@ hr { border: 0; height: 1px; background-color: var(--glass-border); margin: 15px
 #auth-form input {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #333;
+  border: 1px solid #321212;
   border-radius: 8px;
-  background-color: #1e1e2f;
+  background-color: #01017a;
   color: #ffffff;
   font-size: 14px;
   outline: none;

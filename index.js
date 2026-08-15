@@ -341,7 +341,7 @@ document.getElementById('toggle-auth-mode')?.addEventListener('click', (e) => {
 document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
+   const password = document.getElementById('password').value.trim();
     const endpoint = isSignUpMode ? '/api/signup' : '/api/login';
 
     try {
